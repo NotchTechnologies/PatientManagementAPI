@@ -1,8 +1,8 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using PatientManagementAPI.Data;
-using PatientManagementAPI.Services;
 using PatientManagementAPI.DTOs;
-using System.ComponentModel.DataAnnotations;
+using PatientManagementAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,17 +43,17 @@ app.UseAuthorization();
 app.MapControllers();
 
 // 5. Get all patients
-app.MapGet("/api/patients",
-    async (
-        IPatientService patientService,
-        PatientQueryParameters parameters,
-        CancellationToken cancellationToken) =>
-    {
-        var patients = await patientService.GetPatientsAsync(cancellationToken);
-        
+app.MapGet("/api/patients", async (
+    [AsParameters] PatientQueryParameters parameters,
+    IPatientService service,
+    CancellationToken cancellationToken) =>
+{
+    var patients = await service.GetPatientsAsync(
+        parameters,
+        cancellationToken);
 
-        return Results.Ok(patients);
-    });
+    return Results.Ok(patients);
+});
 
 // 6. Get patient by ID
 app.MapGet("/api/patients/{id:int}",
@@ -92,7 +92,7 @@ app.MapPost("/api/patients",
             patient);
     });
 
-    // DELETE: Delete patient
+// DELETE: Delete patient
 app.MapDelete("/api/patients/{id:int}",
     async (int id,
            IPatientService service,
