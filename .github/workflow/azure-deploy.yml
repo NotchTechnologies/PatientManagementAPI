@@ -1,29 +1,35 @@
 
-name: Deploy .NET 9 Web API to Azure
+name: DotNet API - Azure CI CD
 
 on:
   push:
     branches:
       - main
+
   pull_request:
     branches:
       - main
+
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   DOTNET_VERSION: '9.0.x'
-  PROJECT_PATH: './PatientManagementAPI/PatientManagementAPI.csproj'
-  SOLUTION_PATH: './PatientManagementAPI.sln'
-  PUBLISH_PATH: './publish'
+  SOLUTION_PATH: './PatientManagement.sln'
+  PROJECT_PATH: './PatientManagement/PatientManagementAPI.csproj'
+  AZURE_WEBAPP_NAME: 'PatientManagement'
 
 jobs:
 
-  # CI: Build and Test
-  build:
+  # CONTINUOUS INTEGRATION
+  build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source Code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup .NET SDK
@@ -31,56 +37,68 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore Dependencies
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
+      - name: Restore NuGet Packages
+        run: dotnet restore "${{ env.SOLUTION_PATH }}"
 
-      - name: Build Application
-        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+      - name: Build Solution
+        run: |
+          dotnet build "${{ env.SOLUTION_PATH }}" \
+            --configuration Release \
+            --no-restore
 
       - name: Run Unit Tests
-        run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build
+        run: |
+          dotnet test "${{ env.SOLUTION_PATH }}" \
+            --configuration Release \
+            --no-build
 
-      - name: Publish Web API
+      - name: Publish API
         if: github.event_name != 'pull_request'
         run: |
-          dotnet publish ${{ env.PROJECT_PATH }} \
+          dotnet publish "${{ env.PROJECT_PATH }}" \
             --configuration Release \
             --no-build \
-            --output ${{ env.PUBLISH_PATH }}
+            --output ./publish
 
-      - name: Upload Build Artifact
+      - name: Upload Deployment Artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: webapi-package
+          name: api-publish
           path: ./publish/
 
-  # CD: Deploy to Azure
+  # CONTINUOUS DEPLOYMENT
   deploy:
-    needs: build
+    name: Deploy to Azure
+    needs: build-and-test
+
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+
     runs-on: ubuntu-latest
 
+    environment:
+      name: production
+
     permissions:
-      id-token: write
       contents: read
+      id-token: write
 
     steps:
-      - name: Download Build Artifact
+      - name: Download Published Artifact
         uses: actions/download-artifact@v4
         with:
-          name: webapi-package
+          name: api-publish
           path: ./publish
 
-      - name: Login to Azure using OIDC
+      - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure App Service
+      - name: Deploy Web API
         uses: azure/webapps-deploy@v3
         with:
-          app-name: patientMangementAPI
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
           package: ./publish
