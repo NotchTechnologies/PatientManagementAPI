@@ -25,9 +25,9 @@ namespace PatientManagementAPI.Data
         {
             entity.ToTable("Patients");
 
-            entity.HasKey(p => p.PatientID);
+            entity.HasKey(p => p.PatientId);
 
-            entity.Property(p => p.PatientID)
+            entity.Property(p => p.PatientId)
                   .ValueGeneratedOnAdd();
 
             entity.Property(p => p.Pfirstname).IsRequired();

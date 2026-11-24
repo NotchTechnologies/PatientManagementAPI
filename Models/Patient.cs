@@ -7,7 +7,7 @@ namespace PatientManagementAPI.Models
 {
     public class Patient
     {
-         public int PatientID { get; set; }
+         public int PatientId { get; set; }
 
     public string Pfirstname { get; set; } = string.Empty;
 

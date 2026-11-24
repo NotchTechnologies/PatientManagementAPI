@@ -1,39 +1,52 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Mvc;
+using PatientManagementAPI.Services;
+using PatientManagementAPI.Models;
 
 namespace PatientManagementAPI.Controllers
 {
-    
-[ApiController]
-[Route("api/[controller]")]
-public class PatientController : ControllerBase
-{
-    [HttpGet]
-    public IActionResult GetPatients()
+    [ApiController]
+    [Route("api/[controller]")]
+    public class PatientController : ControllerBase
     {
-        var patients = new[]
+        private readonly IPatientService _patientService;
+
+        // Constructor Dependency Injection
+        public PatientController(IPatientService patientService)
         {
-            new { PatientId = 1, Name = "Ramesh" },
-            new { PatientId = 2, Name = "Suresh" }
-        };
+            _patientService = patientService;
+        }
 
-        return Ok(patients);
-    }
-
-    [HttpGet("{id}")]
-    public IActionResult GetPatient(int id)
-    {
-        return Ok(new
+        // GET: api/patient
+        [HttpGet]
+        public async Task<IActionResult> GetPatients(
+            CancellationToken cancellationToken)
         {
-            PatientId = id,
-            Name = "Ramesh"
-        });
-    }
-}
+            var patients = await _patientService.GetPatientsAsync(
+                cancellationToken);
 
-        
-    
+            return Ok(patients);
+        }
+
+        // GET: api/patient/1
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetPatientById(
+            int id,
+            CancellationToken cancellationToken)
+        {
+            var patient = await _patientService.GetPatientByIdAsync(
+                id,
+                cancellationToken);
+
+            if (patient == null)
+            {
+                return NotFound(new
+                {
+                    Message = $"Patient with ID {id} not found."
+                });
+            }
+
+            return Ok(patient);
+        }
+    }
 }

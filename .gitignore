@@ -1,7 +1,28 @@
+
+# Build folders
 bin/
 obj/
+
+# Visual Studio
 .vs/
-.vscode/
 *.user
 *.suo
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
 appsettings.Development.json
+
+# Docker
+docker-compose.override.yml
+
+# OS files
+.DS_Store
+Thumbs.dbc
